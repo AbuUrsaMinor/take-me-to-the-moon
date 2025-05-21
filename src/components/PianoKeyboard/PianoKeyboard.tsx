@@ -114,6 +114,8 @@ export const PianoKeyboard: React.FC<PianoKeyboardProps> = ({ audioBuffer }) => 
                     NOTES.map((note) => {
                         const fullNote = `${note}${octave}`;
                         const hasSharp = note !== 'E' && note !== 'B';
+                        // If this white key is E or B, the next key is also white (no black key between)
+                        const isNarrowWhite = note === 'E' || note === 'B';
                         return (
                             <React.Fragment key={fullNote}>
                                 <PianoKey
@@ -122,6 +124,7 @@ export const PianoKeyboard: React.FC<PianoKeyboardProps> = ({ audioBuffer }) => 
                                     isOn={isNoteOn[fullNote]}
                                     onNoteOn={() => playNote(fullNote)}
                                     onNoteOff={() => stopNote(fullNote)}
+                                    extraClass={isNarrowWhite ? 'white-key-narrow' : ''}
                                 />
                                 {hasSharp && (
                                     <PianoKey

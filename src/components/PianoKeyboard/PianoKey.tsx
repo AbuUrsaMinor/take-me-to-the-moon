@@ -7,6 +7,7 @@ interface PianoKeyProps {
     isOn: boolean;
     onNoteOn: () => void;
     onNoteOff: () => void;
+    extraClass?: string;
 }
 
 export const PianoKey: React.FC<PianoKeyProps> = ({
@@ -15,6 +16,7 @@ export const PianoKey: React.FC<PianoKeyProps> = ({
     isOn,
     onNoteOn,
     onNoteOff,
+    extraClass = '',
 }) => {
     const { orientation } = useWindowOrientation();
     const isLandscape = orientation === 'landscape';
@@ -83,7 +85,7 @@ export const PianoKey: React.FC<PianoKeyProps> = ({
     return (
         <div
             ref={keyRef}
-            className={keyClasses}
+            className={`${keyClasses} ${extraClass}`}
             onPointerDown={handlePointerDown}
             onPointerUp={handlePointerUp}
             onPointerEnter={handlePointerEnter}

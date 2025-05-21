@@ -52,42 +52,28 @@ function App() {
               <AudioRecorder onRecordingComplete={handleRecordingComplete} />
             </div>
           </main>
+
+          {/* If in portrait and audioBuffer exists, show rotate message */}
+          {audioBuffer && orientation === 'portrait' && (
+            <div className="fixed inset-0 flex flex-col items-center justify-center bg-gray-900 bg-opacity-90 z-50">
+              <div className="bg-gray-800 rounded-lg p-8 shadow-xl text-center">
+                <h2 className="text-2xl font-bold text-blue-400 mb-4">Please rotate your device</h2>
+                <p className="text-gray-300">This app works best in landscape mode. Rotate your phone or tablet to continue.</p>
+              </div>
+            </div>
+          )}
         </>
       )}
 
-      {/* Playback Screen - Show after recording */}
-      {audioBuffer && (
+      {/* Playback Screen - Show after recording, only in landscape */}
+      {audioBuffer && orientation === 'landscape' && (
         <>
           {/* Full-screen keyboard in landscape */}
-          {orientation === 'landscape' ? (
-            <div className="h-screen w-screen flex items-center">
-              <PianoKeyboard audioBuffer={audioBuffer} />
-              <CornerMenu>
-                <div className="space-y-4">
-                  <h2 className="text-xl font-semibold text-blue-400 mb-4">Sound Controls</h2>
-                  <SoundControls
-                    volume={volume}
-                    onVolumeChange={setVolume}
-                    attack={envelope.attack}
-                    decay={envelope.decay}
-                    sustain={envelope.sustain}
-                    release={envelope.release}
-                    onEnvelopeChange={handleEnvelopeChange}
-                  />
-                  <button
-                    onClick={handleReRecord}
-                    className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 rounded-md text-white transition-colors"
-                  >
-                    Re-record Sound
-                  </button>
-                </div>
-              </CornerMenu>
-            </div>
-          ) : (
-            // Portrait layout with controls below keyboard
-            <div className="space-y-8">
-              <PianoKeyboard audioBuffer={audioBuffer} />
+          <div className="h-screen w-screen flex items-center">
+            <PianoKeyboard audioBuffer={audioBuffer} />
+            <CornerMenu>
               <div className="space-y-4">
+                <h2 className="text-xl font-semibold text-blue-400 mb-4">Sound Controls</h2>
                 <SoundControls
                   volume={volume}
                   onVolumeChange={setVolume}
@@ -104,8 +90,8 @@ function App() {
                   Re-record Sound
                 </button>
               </div>
-            </div>
-          )}
+            </CornerMenu>
+          </div>
         </>
       )}
     </div>
