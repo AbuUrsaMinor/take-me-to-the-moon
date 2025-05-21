@@ -46,32 +46,48 @@ export const PianoKey: React.FC<PianoKeyProps> = ({
 
     const keyRef = useRef<HTMLDivElement>(null);
 
+    // Track if pointer is down globally
+    const isPointerDown = useRef(false);
+
     useEffect(() => {
-        const el = keyRef.current;
-        if (!el) return;
-        const handleTouchStart = (e: TouchEvent) => {
-            e.preventDefault();
-            onNoteOn();
-        };
-        const handleTouchEnd = (e: TouchEvent) => {
-            e.preventDefault();
-            onNoteOff();
-        };
-        el.addEventListener('touchstart', handleTouchStart, { passive: false });
-        el.addEventListener('touchend', handleTouchEnd, { passive: false });
+        const handlePointerDown = () => { isPointerDown.current = true; };
+        const handlePointerUp = () => { isPointerDown.current = false; };
+        window.addEventListener('pointerdown', handlePointerDown);
+        window.addEventListener('pointerup', handlePointerUp);
         return () => {
-            el.removeEventListener('touchstart', handleTouchStart);
-            el.removeEventListener('touchend', handleTouchEnd);
+            window.removeEventListener('pointerdown', handlePointerDown);
+            window.removeEventListener('pointerup', handlePointerUp);
         };
-    }, [onNoteOn, onNoteOff]);
+    }, []);
+
+    // Use pointer events for both mouse and touch drag
+    const handlePointerDown = () => {
+        isPointerDown.current = true;
+        onNoteOn();
+    };
+    const handlePointerUp = () => {
+        isPointerDown.current = false;
+        onNoteOff();
+    };
+    const handlePointerEnter = () => {
+        if (isPointerDown.current) {
+            onNoteOn();
+        }
+    };
+    const handlePointerLeave = () => {
+        if (isPointerDown.current) {
+            onNoteOff();
+        }
+    };
 
     return (
         <div
             ref={keyRef}
             className={keyClasses}
-            onMouseDown={onNoteOn}
-            onMouseUp={onNoteOff}
-            onMouseLeave={onNoteOff}
+            onPointerDown={handlePointerDown}
+            onPointerUp={handlePointerUp}
+            onPointerEnter={handlePointerEnter}
+            onPointerLeave={handlePointerLeave}
             onContextMenu={(e) => e.preventDefault()}
         >
             <span className={`text-sm font-semibold opacity-50 ${textColor}`}>
