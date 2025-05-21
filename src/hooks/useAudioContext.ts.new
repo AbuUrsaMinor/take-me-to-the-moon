@@ -1,0 +1,44 @@
+import { useCallback, useState } from 'react';
+import * as Tone from 'tone';
+
+export const useAudioContext = () => {
+    const [contextStarted, setContextStarted] = useState(false);
+    const [context] = useState<AudioContext>(() => {
+        console.log('Creating initial AudioContext');
+        const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+        return ctx;
+    });
+
+    const initializeContext = useCallback(async () => {
+        if (!contextStarted) {
+            try {
+                console.log('Initializing context...');
+                
+                if (context.state === 'suspended') {
+                    console.log('Resuming suspended AudioContext');
+                    await context.resume();
+                }
+
+                Tone.setContext(context);
+                await Tone.start();
+                setContextStarted(true);
+                
+                console.log('Context initialized successfully', {
+                    audioContextState: context.state,
+                    toneState: Tone.context.state
+                });
+                return true;
+            } catch (error) {
+                console.error('Failed to initialize context:', error);
+                return false;
+            }
+        }
+        return true;
+    }, [context, contextStarted]);
+
+    return {
+        context,
+        contextStarted,
+        initializeContext
+    };
+};

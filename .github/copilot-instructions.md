@@ -9,7 +9,7 @@
 The project is a web application that uses the following technologies:
 * React
 * Vite 
-* Tailwind CSS
+* Tailwind CSS v4 using the @tailwindcss/vite plugin (refer to doc/installation_tailwind.md)
 * TypeScript
 * Node.js
 * PWA
