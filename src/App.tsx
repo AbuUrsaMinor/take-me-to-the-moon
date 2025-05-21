@@ -70,7 +70,7 @@ function App() {
         <>
           {/* Full-screen keyboard in landscape */}
           <div className="h-screen w-screen flex items-center">
-            <PianoKeyboard audioBuffer={audioBuffer} />
+            <PianoKeyboard audioBuffer={audioBuffer} volume={volume} envelope={envelope} />
             <CornerMenu>
               <div className="space-y-4">
                 <h2 className="text-xl font-semibold text-blue-400 mb-4">Sound Controls</h2>

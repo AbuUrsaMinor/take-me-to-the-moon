@@ -8,94 +8,103 @@ const OCTAVES = [3, 4]; // Two octaves: C3-B3 and C4-B4
 
 interface PianoKeyboardProps {
     audioBuffer: AudioBuffer | null;
+    volume: number;
+    envelope: {
+        attack: number;
+        decay: number;
+        sustain: number;
+        release: number;
+    };
 }
 
-export const PianoKeyboard: React.FC<PianoKeyboardProps> = ({ audioBuffer }) => {
+export const PianoKeyboard: React.FC<PianoKeyboardProps> = ({ audioBuffer, volume, envelope }) => {
     const [player, setPlayer] = useState<Tone.Player | null>(null);
+    const [gain, setGain] = useState<Tone.Gain | null>(null);
+    const [ampEnv, setAmpEnv] = useState<Tone.AmplitudeEnvelope | null>(null);
     const [isNoteOn, setIsNoteOn] = useState<Record<string, boolean>>({});
     const { initializeContext } = useAudioContext();
 
     useEffect(() => {
-        const setupPlayer = async () => {
-            console.log('PianoKeyboard setup starting:', {
-                hasAudioBuffer: !!audioBuffer,
-                contextState: Tone.context.state
-            });
-
+        const setupAudioChain = async () => {
             if (!audioBuffer) return;
+            await initializeContext();
 
-            try {
-                const initialized = await initializeContext();
-                if (!initialized) {
-                    console.error('Failed to initialize audio context');
-                    return;
-                }
-                console.log('Context initialized for piano keyboard');
+            if (player) player.dispose();
+            if (gain) gain.dispose();
+            if (ampEnv) ampEnv.dispose();
 
-                // Clean up any existing player
-                if (player) {
-                    player.dispose();
-                }
-
-                // Create a new buffer and player
-                const buffer = new Tone.ToneAudioBuffer();
-                buffer.set(audioBuffer);
-
-                const newPlayer = new Tone.Player({
-                    playbackRate: 1,
-                    fadeOut: 0.1,
-                    volume: 0,
-                }).toDestination();
-
-                newPlayer.buffer = buffer;
-                setPlayer(newPlayer);
-                console.log('Player setup complete with buffer:', !!newPlayer.buffer);
-            } catch (error) {
-                console.error('Error setting up audio player:', error);
-            }
+            const buffer = new Tone.ToneAudioBuffer();
+            buffer.set(audioBuffer);
+            const newPlayer = new Tone.Player({
+                playbackRate: 1,
+                fadeOut: 0.1,
+                volume: 0,
+            });
+            newPlayer.buffer = buffer;
+            const newGain = new Tone.Gain(volume).toDestination();
+            const newEnv = new Tone.AmplitudeEnvelope({
+                attack: envelope.attack,
+                decay: envelope.decay,
+                sustain: envelope.sustain,
+                release: envelope.release,
+            });
+            newPlayer.connect(newEnv);
+            newEnv.connect(newGain);
+            setPlayer(newPlayer);
+            setGain(newGain);
+            setAmpEnv(newEnv);
         };
-
-        setupPlayer();
-
+        setupAudioChain();
         return () => {
-            if (player) {
-                player.dispose();
-            }
+            if (player) player.dispose();
+            if (gain) gain.dispose();
+            if (ampEnv) ampEnv.dispose();
         };
-    }, [audioBuffer, initializeContext]);
+    }, [audioBuffer, volume, envelope, initializeContext]);
+
+    useEffect(() => {
+        if (gain) gain.gain.value = volume;
+    }, [volume, gain]);
+    useEffect(() => {
+        if (ampEnv) {
+            ampEnv.attack = envelope.attack;
+            ampEnv.decay = envelope.decay;
+            ampEnv.sustain = envelope.sustain;
+            ampEnv.release = envelope.release;
+        }
+    }, [envelope, ampEnv]);
 
     const playNote = useCallback(
         async (note: string) => {
             try {
                 await initializeContext();
-
-                if (player && !isNoteOn[note]) {
-                    console.log('Playing note:', note);
+                if (player && ampEnv && !isNoteOn[note]) {
                     const noteFreq = Tone.Frequency(note).toFrequency();
                     const baseFreq = Tone.Frequency('C4').toFrequency();
                     player.playbackRate = noteFreq / baseFreq;
-                    await player.start();
+                    player.start();
+                    ampEnv.triggerAttack();
                     setIsNoteOn((prev) => ({ ...prev, [note]: true }));
                 }
             } catch (error) {
                 console.error('Error playing note:', error);
             }
         },
-        [player, isNoteOn, initializeContext]
+        [player, ampEnv, isNoteOn, initializeContext]
     );
 
     const stopNote = useCallback(
         (note: string) => {
             try {
-                if (player && isNoteOn[note]) {
-                    player.stop();
+                if (player && ampEnv && isNoteOn[note]) {
+                    ampEnv.triggerRelease();
                     setIsNoteOn((prev) => ({ ...prev, [note]: false }));
                 }
             } catch (error) {
                 console.error('Error stopping note:', error);
             }
         },
-        [player, isNoteOn]
+        [player, ampEnv, isNoteOn]
     );    // Calculate white and black keys for rendering
     const whiteKeys: React.ReactNode[] = [];
     const blackKeys: React.ReactNode[] = [];
