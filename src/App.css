@@ -40,3 +40,44 @@
 .read-the-docs {
   color: #888;
 }
+
+/* Custom styles for range inputs */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  background-color: rgb(75, 85, 99);
+  height: 8px;
+  border-radius: 4px;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  background-color: rgb(59, 130, 246);
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+input[type="range"]::-moz-range-thumb {
+  background-color: rgb(59, 130, 246);
+  width: 16px;
+  height: 16px;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+/* Ensure proper touch handling on mobile */
+@media (hover: none) {
+  input[type="range"]::-webkit-slider-thumb {
+    width: 24px;
+    height: 24px;
+  }
+
+  input[type="range"]::-moz-range-thumb {
+    width: 24px;
+    height: 24px;
+  }
+}
