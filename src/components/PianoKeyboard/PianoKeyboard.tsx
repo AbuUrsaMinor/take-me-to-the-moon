@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import * as Tone from 'tone';
 import { useAudioContext } from '../../hooks/useAudioContext';
-import { useWindowOrientation } from '../../hooks/useWindowOrientation';
 import { PianoKey } from './PianoKey';
 
 const NOTES = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
@@ -15,7 +14,6 @@ export const PianoKeyboard: React.FC<PianoKeyboardProps> = ({ audioBuffer }) => 
     const [player, setPlayer] = useState<Tone.Player | null>(null);
     const [isNoteOn, setIsNoteOn] = useState<Record<string, boolean>>({});
     const { initializeContext } = useAudioContext();
-    const { orientation } = useWindowOrientation();
 
     useEffect(() => {
         const setupPlayer = async () => {
@@ -98,47 +96,58 @@ export const PianoKeyboard: React.FC<PianoKeyboardProps> = ({ audioBuffer }) => 
             }
         },
         [player, isNoteOn]
-    );    // Determine keyboard container styles based on orientation
-    const containerClasses = orientation === 'landscape'
-        ? 'fixed inset-0 flex flex-row items-stretch justify-center w-screen h-screen'
-        : 'fixed inset-0 flex flex-col items-stretch justify-center w-screen h-screen';
-
-    const keysContainerClasses = orientation === 'landscape'
-        ? 'flex flex-row items-stretch justify-center w-full h-full'
-        : 'flex flex-col items-stretch justify-center w-full h-full';
+    );    // Calculate white and black keys for rendering
+    const whiteKeys: React.ReactNode[] = [];
+    const blackKeys: React.ReactNode[] = [];
+    // For left percentage calculation
+    const totalWhiteKeys = OCTAVES.length * NOTES.length;
+    let whiteKeyIndex = 0;
+    const blackKeyWidthPercent = 70 / 100; // 70% of a white key (was 60%)
+    OCTAVES.forEach((octave) => {
+        NOTES.forEach((note) => {
+            const fullNote = `${note}${octave}`;
+            whiteKeys.push(
+                <PianoKey
+                    key={fullNote}
+                    note={fullNote}
+                    isWhite={true}
+                    isOn={isNoteOn[fullNote]}
+                    onNoteOn={() => playNote(fullNote)}
+                    onNoteOff={() => stopNote(fullNote)}
+                />
+            );
+            // Black key logic
+            const hasSharp = note !== 'E' && note !== 'B';
+            if (hasSharp) {
+                // Black key sits between this and next white key
+                // Place it at (whiteKeyIndex + 0.7) / totalWhiteKeys for a natural look
+                const leftPercent = ((whiteKeyIndex + 0.7) / totalWhiteKeys) * 100;
+                const widthPercent = (1 / totalWhiteKeys) * 100 * blackKeyWidthPercent;
+                blackKeys.push(
+                    <PianoKey
+                        key={`${note}#${octave}`}
+                        note={`${note}#${octave}`}
+                        isWhite={false}
+                        isOn={isNoteOn[`${note}#${octave}`]}
+                        onNoteOn={() => playNote(`${note}#${octave}`)}
+                        onNoteOff={() => stopNote(`${note}#${octave}`)}
+                        extraClass={`pointer-events-auto`}
+                        width={widthPercent}
+                        left={leftPercent}
+                    />
+                );
+            }
+            whiteKeyIndex++;
+        });
+    });
 
     return (
-        <div className={containerClasses}>
-            <div className={keysContainerClasses}>
-                {OCTAVES.map((octave) =>
-                    NOTES.map((note) => {
-                        const fullNote = `${note}${octave}`;
-                        const hasSharp = note !== 'E' && note !== 'B';
-                        // If this white key is E or B, the next key is also white (no black key between)
-                        const isNarrowWhite = note === 'E' || note === 'B';
-                        return (
-                            <React.Fragment key={fullNote}>
-                                <PianoKey
-                                    note={fullNote}
-                                    isWhite={true}
-                                    isOn={isNoteOn[fullNote]}
-                                    onNoteOn={() => playNote(fullNote)}
-                                    onNoteOff={() => stopNote(fullNote)}
-                                    extraClass={isNarrowWhite ? 'white-key-narrow' : ''}
-                                />
-                                {hasSharp && (
-                                    <PianoKey
-                                        note={`${note}#${octave}`}
-                                        isWhite={false}
-                                        isOn={isNoteOn[`${note}#${octave}`]}
-                                        onNoteOn={() => playNote(`${note}#${octave}`)}
-                                        onNoteOff={() => stopNote(`${note}#${octave}`)}
-                                    />
-                                )}
-                            </React.Fragment>
-                        );
-                    })
-                )}
+        <div className="relative w-full h-full overflow-hidden">
+            <div className="flex flex-row w-full h-full z-10">
+                {whiteKeys}
+            </div>
+            <div className="absolute top-0 left-0 w-full h-full pointer-events-none z-20">
+                {blackKeys}
             </div>
         </div>
     );

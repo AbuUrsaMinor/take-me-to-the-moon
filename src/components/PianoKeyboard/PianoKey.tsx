@@ -1,5 +1,4 @@
 import React, { useEffect, useRef } from 'react';
-import { useWindowOrientation } from '../../hooks/useWindowOrientation';
 
 interface PianoKeyProps {
     note: string;
@@ -8,6 +7,9 @@ interface PianoKeyProps {
     onNoteOn: () => void;
     onNoteOff: () => void;
     extraClass?: string;
+    // Add optional width and left for black key positioning
+    width?: number; // in percentage or px
+    left?: number; // in percentage or px
 }
 
 export const PianoKey: React.FC<PianoKeyProps> = ({
@@ -17,14 +19,13 @@ export const PianoKey: React.FC<PianoKeyProps> = ({
     onNoteOn,
     onNoteOff,
     extraClass = '',
+    width,
+    left,
 }) => {
-    const { orientation } = useWindowOrientation();
-    const isLandscape = orientation === 'landscape';
-
     // Define size classes based on orientation and key type
     const keySize = isWhite
-        ? (isLandscape ? 'h-screen w-24' : 'h-40 w-full')
-        : (isLandscape ? 'h-[60vh] w-16' : 'h-24 w-[70%]');
+        ? 'flex-1 min-w-0 h-full' // White keys fill available space
+        : 'h-[60%] w-2/5 absolute z-20'; // Black keys: fixed width, parent sets left
 
     // Define appearance classes
     const keyColor = isWhite
@@ -36,15 +37,27 @@ export const PianoKey: React.FC<PianoKeyProps> = ({
     const textColor = isWhite ? 'text-gray-600' : 'text-white';
 
     // Position black keys
-    const position = !isWhite ? 'absolute top-0 -mx-8 z-20' : '';
+    const position = !isWhite ? '' : 'relative';
 
     // Combine all classes
     const keyClasses = `
         ${keyColor} ${keySize} ${keyHover} ${position}
-        relative rounded-b-md cursor-pointer border border-gray-300
+        rounded-b-md cursor-pointer border border-gray-300
         flex flex-col justify-end items-center pb-2
         transition-colors duration-75
     `.trim();
+
+    // Inline style for black keys
+    let style: React.CSSProperties | undefined = undefined;
+    if (!isWhite && width !== undefined && left !== undefined) {
+        style = {
+            width: typeof width === 'number' ? `${width}%` : width,
+            left: typeof left === 'number' ? `${left}%` : left,
+            position: 'absolute',
+            height: '60%',
+            zIndex: 20,
+        };
+    }
 
     const keyRef = useRef<HTMLDivElement>(null);
 
@@ -86,6 +99,7 @@ export const PianoKey: React.FC<PianoKeyProps> = ({
         <div
             ref={keyRef}
             className={`${keyClasses} ${extraClass}`}
+            style={style}
             onPointerDown={handlePointerDown}
             onPointerUp={handlePointerUp}
             onPointerEnter={handlePointerEnter}
